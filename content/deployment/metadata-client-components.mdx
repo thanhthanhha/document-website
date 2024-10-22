@@ -1,0 +1,59 @@
+---
+updated: 2024-02-16
+title: How to set metadata to page.tsx rendered as client components?
+authors: [thanhthanhha]
+---
+
+> [The `export const metadata` syntax](https://nextjs.org/docs/app/api-reference/functions/generate-metadata) seems to not work if `page.tsx` is a client component. How do I set my page title and other metadata then?
+
+The `metadata`, `generateMetadata`, `viewport` and `generateViewport` exports are only supported in server components. Hence, you need to make your page a server component to use them. A method to do that is to move all your client-side logic to a separate client component and import that client component to the now-server component `page.tsx`. So instead of
+
+```tsx title="page.tsx"
+"use client";
+export default function Page() {
+  useSomeHook();
+  return <Something />;
+}
+export const metadata = { title: "My Page" };
+```
+
+you need to make a new client component, say `page.client.tsx`, and import it to `page.tsx`:
+
+```tsx title="page.client.tsx"
+"use client";
+
+export default function PageClient() {
+  useSomeHook();
+  return <Something />;
+}
+```
+
+```tsx title="page.tsx"
+import PageClient from "./page.client"; // [!code highlight]
+
+export const metadata = { title: "My Page" };
+
+export default function Page() {
+  return <PageClient />;
+}
+```
+
+## How do I set dynamic metadata that depends on client-side states?
+
+Just put `<title>`, `<meta>` and metadata `<link>` tags anywhere in your component tree, including inside client components. React will automatically detect this and put those tags in `<head>` for you.
+
+```tsx
+"use client";
+import { useState } from "react";
+
+export default function Page() {
+  const [title, setTitle] = useState("Hello World");
+  return (
+    <div>
+      {/* Yes, we simply put the <title> tag anywhere in the document. */}
+      <title>{title}</title>
+      <input value={title} onChange={e => setTitle(e.target.value)} />
+    </div>
+  );
+}
+```
